@@ -1,0 +1,322 @@
+---
+pagetitle: EC2203 Nonlinear regression functions
+output: 
+  revealjs::revealjs_presentation:
+    incremental: false
+    theme: solarized
+    self_contained: false
+    # reveal_plugins: ["menu","notes","chalkboard"]
+    reveal_plugins: ["menu"]
+    highlight: pygments
+    center: true
+    transition: none
+    background_transition: none 
+    reveal_options:
+      # chalkboard:
+      #   theme: whiteboard
+      #   toggleNotesButton: true
+      #   toggleChalkboardButton: true
+      menu:
+        numbers: true
+      slideNumber: true
+      previewLinks: false
+    fig_caption: true
+    pandoc_args:
+    - --indented-code-classes
+    - lineNumbers
+    css: mystyle.css
+    
+--- 
+
+<section>
+
+<h1>Nonlinear regression functions</h1>
+
+Based on Stock and Watson, ch. 8
+
+<br>
+
+<h2>[Jesper Bagger](mailto:jesper.bagger@rhul.ac.uk)</h2>
+
+<h3>EC2203 | Royal Holloway | 2020/21</h3>
+
+</section>
+
+
+```{r results='asis', echo=FALSE, include=FALSE}
+library(AER) # Load Applied Econometrics with R library
+library(parameters) # Load parameters library 
+data(CASchools) # Load CASchools data
+# Generate a couple of useful variables
+CASchools$STR <- CASchools$students/CASchools$teachers  # Student-teacher ratio
+CASchools$Score <- (CASchools$read + CASchools$math)/2  # Student test score
+```
+
+
+## Test scores and district income
+
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+# Scatter plot of Score against STR
+plot(CASchools$income,CASchools$Score,
+     xlab = "District income ($1,000)", # Label x-axis
+     ylab = "Test score", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(0, 60), # Range of x-values in plot
+     ylim = c(600, 740)) # Range of y-values in plot
+```
+
+## Test scores and district income
+
+$$Score_i = 625 + 1.88 Income_i + \hat{u}_i$$
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+# Estimate simple linear regression Score = b0 + b1*income + u
+lm1 <- lm(Score ~ income, data = CASchools) # Assign OLS output to to lm1 list
+# Scatter plot of Score against STR
+plot(CASchools$income,CASchools$Score,
+     xlab = "District income ($1,000)", # Label x-axis
+     ylab = "Test score", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(0, 60), # Range of x-values in plot
+     ylim = c(600, 740)) # Range of y-values in plot
+# Add simple linear sample regression function
+abline(lm1,
+       lwd = 3,
+       col = "blue")
+```
+
+<!-- ## Nonlinear test score-income relationship -->
+
+<!-- - At low income levels, additional income increases test scores by a lot, but at high income levels, the effect of income on test scores is very modest -->
+
+<!-- - A regression function that is linear in $Income$ cannot capture this phenomenon -->
+
+## A polynomial regresssion function
+
+- Consider the polynomial (quadratic) regression model
+
+  <div class="box">
+  $$Score_i = \underset{E(Score_i|Income_i)}{\underbrace{\beta_0 + \beta_1 Income_i + \beta_2 Income_i^2}} + u_i$$
+  </div>
+  
+- The polynomial regression model is **linear** in the parameters $\beta_0$, $\beta_1$, and $\beta_2$, but **nonlinear** in $Income$
+
+## Non-constant $Income$ effects
+
+- The change in $Score_i$ associated w/ a small change in $Income_i$ is:
+
+  <div class="box">
+  $$\lim_{\Delta Income_i \rightarrow 0}\frac{\Delta Score_i}{\Delta Income_i} = \beta_1 + 2 \beta_2 Income_i$$
+  </div>
+  
+- The effect of $Income$ on $Score$ varies with $Income$ in the polynomial regression model
+
+## Estimating the polynomial regression model
+
+```{r, echo=TRUE, eval=FALSE, error=FALSE, warning=FALSE}
+# Creating income^2
+CASchools$income2 <- CASchools$income^2
+# Estimate simple linear regression, assign to lm1
+lm1 <- lm(Score ~ income, data = CASchools)
+parameters(lm1, robust = TRUE, vcov_type = "HC1")
+# Estimate polynomial regression, assign to lm2
+lm2 <- lm(Score ~ income + income2, data = CASchools) 
+parameters(lm2, robust = TRUE, vcov_type = "HC1")
+```
+
+
+## linear and polynomial regression model parameters
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+# Creating income^2
+CASchools$income2 <- CASchools$income^2
+# Estimate simple linear regression, assign to lm1
+lm1 <- lm(Score ~ income, data = CASchools)
+parameters(lm1, robust = TRUE, vcov_type = "HC1")
+# Estimate polynomial regression, assign to lm2
+lm2 <- lm(Score ~ income + income2, data = CASchools) 
+parameters(lm2, robust = TRUE, vcov_type = "HC1")
+```
+
+
+## Test scores and district income
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+# Define estimated polynomial regression function
+nonlinregfct <- function(x){lm2$coefficients["(Intercept)"] +
+                            lm2$coefficients["income"]*x +
+                            lm2$coefficients["income2"]*x^2}
+# Scatter plot of Score against STR
+plot(CASchools$income,CASchools$Score,
+     xlab = "District income ($1,000)", # Label x-axis
+     ylab = "Test score", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(0, 60), # Range of x-values in plot
+     ylim = c(600, 740)) # Range of y-values in plot
+# Add simple linear sample regression function
+abline(lm1,
+       lwd = 3,
+       col = "blue")
+curve(nonlinregfct,
+      from = -10, to = 70, # Evaluate in x values from 5 to 35
+      lwd = 3,
+      col = "red",
+      add = TRUE)
+# Add legends to the plot 
+legend("bottomright", inset = 0.02, 
+       legend=c("Linear", "Quadratic"),
+       col=c("blue", "red"), 
+       lwd=c(3,3))
+```
+
+
+## Test scores and district income
+
+```{r, echo=TRUE, eval=FALSE, error=FALSE, warning=FALSE}
+# Define estimated polynomial regression function
+nonlinregfct <- function(x){lm2$coefficients["(Intercept)"] +
+                            lm2$coefficients["income"]*x +
+                            lm2$coefficients["income2"]*x^2}
+# Scatter plot of Score against STR
+plot(CASchools$income,CASchools$Score,
+     xlab = "District income ($1,000)", # Label x-axis
+     ylab = "Test score", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(0, 60), # Range of x-values in plot
+     ylim = c(600, 740)) # Range of y-values in plot
+# Add simple linear sample regression function
+abline(lm1,
+       lwd = 3,
+       col = "blue")
+curve(nonlinregfct,
+      from = -10, to = 70, # Evaluate in x values from 5 to 35
+      lwd = 3,
+      col = "red",
+      add = TRUE)
+# Add legends to the plot 
+legend("bottomright", inset = 0.02, 
+       legend=c("Linear", "Quadratic"),
+       col=c("blue", "red"), 
+       lwd=c(3,3))
+```
+
+## Test scores, student teacher ratio, and district income
+
+$$Score_i = 698.93 - 2.28 STR_i + \hat{u}_i$$
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+# Creating a few additional useful variables
+CASchools$HigInc <- (CASchools$income >= median(CASchools$income)) # = TRUE if income above median income in sample, = FALSE otherwise
+CASchools$STR.x.HigInc <- CASchools$STR * CASchools$HigInc # Interaction
+# Estimate simple linear regression Score = b0 + b1*income + u
+lm1 <- lm(Score ~ income, data = CASchools) # Assign OLS output to to lm1 list
+lm2 <- lm(Score ~ STR, data = CASchools) # Assign OLS output to to lm1 list
+lm3 <- lm(Score ~ STR + HigInc + STR.x.HigInc, data = CASchools) # Assign OLS output to to lm1 list
+# Scatter plot of Score against STR
+plot(CASchools$STR,CASchools$Score,
+     xlab = "Student-teacher ratio", # Label x-axis
+     ylab = "Test score", # Label y-axis
+     col = "blue", # Make the data points blue
+     xlim = c(10, 30), # Range of x-values in plot
+     ylim = c(600, 740)) # Range of y-values in plot
+# Add simple linear sample regression function
+abline(lm2,
+       lwd = 3,
+       col = "blue")
+```
+
+## An interaction regresssion function
+
+- Consider the interaction regression model
+
+  <div class="box">
+  \begin{multline}
+  Score_i = \beta_0 + \beta_1 STR_i + \beta_2 HigInc_i \\
+  + \beta_3 (STR_i \times HigInc_i) + u_i
+  \end{multline}
+  </div>
+  
+- The interaction regression model is **linear** in parameters $\beta_0$, $\beta_1$, $\beta_2$, and $\beta_3$, but **nonlinear** in $Income$
+
+## Non-constant $STR$ effect
+
+- The change in $Score_i$ associated w/ a unit change in $STR_i$ is:
+
+  <div class="box">
+  $$\frac{\Delta Score_i}{\Delta STR_i} = \beta_1 + \beta_3 HigInc_i$$
+  </div>
+  
+- The effect of $STR$ on $Score$ varies with $Income$ in the interaction regression model
+
+## Estimating the interaction regression model
+
+```{r, echo=TRUE, eval=FALSE, error=FALSE, warning=FALSE}
+# Creating a few additional useful variables
+CASchools$HigInc <- (CASchools$income >= median(CASchools$income)) # = TRUE if income above median income in sample, = FALSE otherwise
+CASchools$STR.x.HigInc <- CASchools$STR * CASchools$HigInc # Interaction
+# Estimate simple linear regression Score = b0 + b1*income + u
+lm3 <- lm(Score ~ STR + HigInc + STR.x.HigInc, data = CASchools) # Assign OLS output to to lm3 list
+summary(lm3)
+parameters(lm3, robust = TRUE, vcov_type = "HC1")
+```
+
+## Estimating the interaction regression model
+
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
+# Creating a few additional useful variables
+CASchools$HigInc <- (CASchools$income >= median(CASchools$income)) # = TRUE if income above median income in sample, = FALSE otherwise
+CASchools$STR.x.HigInc <- CASchools$STR * CASchools$HigInc # Interaction
+# Estimate simple linear regression Score = b0 + b1*income + u
+lm3 <- lm(Score ~ STR + HigInc + STR.x.HigInc, data = CASchools) # Assign OLS output to to lm3 list
+parameters(lm3, robust = TRUE, vcov_type = "HC1")
+```
+
+## Test scores, student teacher ratio, and district income
+
+\begin{multline}
+Score_i = 663.89 - 1.01 STR_i + \\
+62.53 HigInc_i-2.17 (STR_i \times HigInc_i)  + \hat{u}_i
+\end{multline}
+```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE,out.width = "70%"}
+# Scatter plot of Score against STR
+plot(CASchools$STR,CASchools$Score,
+     xlab = "Student-teacher ratio", # Label x-axis
+     ylab = "Test score", # Label y-axis
+     col = "green", # Make the data points blue
+     xlim = c(10, 30), # Range of x-values in plot
+     ylim = c(600, 740)) # Range of y-values in plot
+points(CASchools$STR[!CASchools$HigInc],CASchools$Score[!CASchools$HigInc],
+       lwd = 1.5,
+       col = "red")
+# Add simple linear sample regression function
+abline(lm3$coefficients["(Intercept)"] + lm3$coefficients["HigIncTRUE"],
+       lm3$coefficients["STR"] + lm3$coefficients["STR.x.HigInc"],
+       lwd = 3,
+       col = "green")
+# Add simple linear sample regression function
+abline(lm3$coefficients["(Intercept)"],
+       lm3$coefficients["STR"],
+       lwd = 3,
+       col = "red")
+abline(lm2,
+       lwd = 3,
+       col = "blue")
+# Add legends to the plot 
+legend("topright", inset = 0.02, 
+       legend=c("All", "Above median income", "Below median income"),
+       col=c("blue", "green", "red"), 
+       lwd=c(3,3,3))
+```
+
+# Summary
+
+## Summary
+
+- Nonlinear regression functions allow for non-constant effects of the regressor on the dependent variable
+
+  - Polynomial regression model
+  
+  - Interaction regression model
+  
+- Failure to capture nonlinear effects may lead the OLS estimator of causal effects to be inconsistent and biased.
+
+- Possible to test for nonlinear effects.
