@@ -52,6 +52,7 @@ CASchools$STR <- CASchools$students/CASchools$teachers  # Student-teacher ratio
 CASchools$Score <- (CASchools$read + CASchools$math)/2  # Student test score
 ```
 
+# Polynomial regression functions
 
 ## Test scores and district income
 
@@ -125,7 +126,7 @@ parameters(lm2, robust = TRUE, vcov_type = "HC1")
 ```
 
 
-## linear and polynomial regression model parameters
+## Linear and polynomial regression model parameters
 
 ```{r, echo=FALSE, eval=TRUE, error=FALSE, warning=FALSE}
 # Creating income^2
@@ -200,6 +201,17 @@ legend("bottomright", inset = 0.02,
        lwd=c(3,3))
 ```
 
+## Tests of the effect of income on test scores
+
+$$H_0: \, \beta_{Income} = \beta_{Income^2} = 0$$
+
+```{r, echo=TRUE, eval=TRUE, error=FALSE, warning=FALSE}
+linearHypothesis(lm2, c("income=0", "income2=0"), white.adjust = "hc1")
+```
+
+
+# Interaction regression functions
+
 ## Test scores, student teacher ratio, and district income
 
 $$Score_i = 698.93 - 2.28 STR_i + \hat{u}_i$$
@@ -224,7 +236,7 @@ abline(lm2,
        col = "blue")
 ```
 
-## An interaction regresssion function
+## An interaction regression function
 
 - Consider the interaction regression model
 
@@ -235,7 +247,7 @@ abline(lm2,
   \end{multline}
   </div>
   
-- The interaction regression model is **linear** in parameters $\beta_0$, $\beta_1$, $\beta_2$, and $\beta_3$, but **nonlinear** in $Income$
+- **Linear** in coefficients $\beta_0$, $\beta_1$, $\beta_2$, and $\beta_3$, but the effects of $STR$ (and $Income$) are **nonlinear**, as they depend on $Income$ (respectively, $STR$)
 
 ## Non-constant $STR$ effect
 
